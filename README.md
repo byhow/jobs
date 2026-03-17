@@ -1,92 +1,61 @@
 # AI Exposure of the US Job Market
 
-Analyzing how susceptible every occupation in the US economy is to AI and automation, using data from the Bureau of Labor Statistics [Occupational Outlook Handbook](https://www.bls.gov/ooh/) (OOH).
+[![Live Demo](https://img.shields.io/badge/Live_Demo-arosstale.github.io/jobs-blue?style=for-the-badge)](https://arosstale.github.io/jobs/)
+[![Stars](https://img.shields.io/github/stars/arosstale/jobs?style=for-the-badge)](https://github.com/arosstale/jobs/stargazers)
+[![Forks](https://img.shields.io/github/forks/arosstale/jobs?style=for-the-badge)](https://github.com/arosstale/jobs/forks)
 
-**Live demo: [karpathy.ai/jobs](https://karpathy.ai/jobs/)**
+> **How susceptible is every occupation in the US economy to AI and automation?**
+
+Interactive treemap analyzing **342 occupations** from the Bureau of Labor Statistics. Area = employment. Color = AI exposure. Hover for details.
+
+**[Launch the visualization →](https://arosstale.github.io/jobs/)**
 
 ![AI Exposure Treemap](jobs.png)
 
-## What's here
+## Key Findings
 
-The BLS OOH covers **342 occupations** spanning every sector of the US economy, with detailed data on job duties, work environment, education requirements, pay, and employment projections. We scraped all of it, scored each occupation's AI exposure using an LLM, and built an interactive treemap visualization.
+- **Average AI exposure:** 5.3/10 across all 342 occupations
+- **Highest risk:** Software developers, data analysts, translators, paralegals (8-9/10)
+- **Lowest risk:** Roofers, landscapers, construction laborers (0-1/10)
+- **The signal:** If the job can be done entirely from a home office on a computer, AI exposure is inherently high
 
-## Data pipeline
-
-1. **Scrape** (`scrape.py`) — Playwright (non-headless, BLS blocks bots) downloads raw HTML for all 342 occupation pages into `html/`.
-2. **Parse** (`parse_detail.py`, `process.py`) — BeautifulSoup converts raw HTML into clean Markdown files in `pages/`.
-3. **Tabulate** (`make_csv.py`) — Extracts structured fields (pay, education, job count, growth outlook, SOC code) into `occupations.csv`.
-4. **Score** (`score.py`) — Sends each occupation's Markdown description to an LLM (Gemini Flash via OpenRouter) with a scoring rubric. Each occupation gets an AI Exposure score from 0-10 with a rationale. Results saved to `scores.json`.
-5. **Build site data** (`build_site_data.py`) — Merges CSV stats and AI exposure scores into a compact `site/data.json` for the frontend.
-6. **Website** (`site/index.html`) — Interactive treemap visualization where area = employment and color = AI exposure (green to red).
-
-## Key files
-
-| File | Description |
-|------|-------------|
-| `occupations.json` | Master list of 342 occupations with title, URL, category, slug |
-| `occupations.csv` | Summary stats: pay, education, job count, growth projections |
-| `scores.json` | AI exposure scores (0-10) with rationales for all 342 occupations |
-| `html/` | Raw HTML pages from BLS (source of truth, ~40MB) |
-| `pages/` | Clean Markdown versions of each occupation page |
-| `site/` | Static website (treemap visualization) |
-
-## AI exposure scoring
-
-Each occupation is scored on a single **AI Exposure** axis from 0 to 10, measuring how much AI will reshape that occupation. The score considers both direct automation (AI doing the work) and indirect effects (AI making workers so productive that fewer are needed).
-
-A key signal is whether the job's work product is fundamentally digital — if the job can be done entirely from a home office on a computer, AI exposure is inherently high. Conversely, jobs requiring physical presence, manual skill, or real-time human interaction have a natural barrier.
-
-**Calibration examples from the dataset:**
-
-| Score | Meaning | Examples |
-|-------|---------|---------|
-| 0-1 | Minimal | Roofers, janitors, construction laborers |
-| 2-3 | Low | Electricians, plumbers, nurses aides, firefighters |
-| 4-5 | Moderate | Registered nurses, retail workers, physicians |
-| 6-7 | High | Teachers, managers, accountants, engineers |
-| 8-9 | Very high | Software developers, paralegals, data analysts, editors |
-| 10 | Maximum | Medical transcriptionists |
-
-Average exposure across all 342 occupations: **5.3/10**.
-
-## Visualization
-
-The main visualization is an interactive **treemap** where:
-- **Area** of each rectangle is proportional to employment (number of jobs)
-- **Color** indicates AI exposure on a green (safe) to red (exposed) scale
-- **Layout** groups occupations by BLS category
-- **Hover** shows detailed tooltip with pay, jobs, outlook, education, exposure score, and LLM rationale
-
-## Setup
+## How It Works
 
 ```
-uv sync
-uv run playwright install chromium
+Scrape BLS → Parse to Markdown → Score with LLM → Build treemap
 ```
 
-Requires an OpenRouter API key in `.env`:
-```
-OPENROUTER_API_KEY=your_key_here
-```
+1. **Scrape** — Playwright downloads all 342 occupation pages from BLS
+2. **Parse** — BeautifulSoup converts HTML to clean Markdown
+3. **Score** — Gemini Flash scores each occupation's AI exposure (0-10) with rationale
+4. **Visualize** — D3 treemap where area = jobs and color = exposure
 
-## Usage
+## Run It Yourself
 
 ```bash
-# Scrape BLS pages (only needed once, results are cached in html/)
-uv run python scrape.py
+uv sync && uv run playwright install chromium
+echo "OPENROUTER_API_KEY=your_key" > .env
 
-# Generate Markdown from HTML
-uv run python process.py
-
-# Generate CSV summary
-uv run python make_csv.py
-
-# Score AI exposure (uses OpenRouter API)
-uv run python score.py
-
-# Build website data
-uv run python build_site_data.py
-
-# Serve the site locally
-cd site && python -m http.server 8000
+uv run python scrape.py          # download BLS pages
+uv run python process.py         # HTML to Markdown
+uv run python make_csv.py        # extract structured data
+uv run python score.py           # LLM scoring
+uv run python build_site_data.py # build site data
+cd site && python -m http.server  # view at localhost:8000
 ```
+
+## Want a generalized version?
+
+Check out **[universal-analyzer](https://github.com/arosstale/universal-analyzer)** — same engine, works with any dataset.
+
+## Data
+
+| File | What |
+|------|------|
+| `occupations.csv` | 342 occupations with pay, education, job count, growth |
+| `scores.json` | AI exposure scores (0-10) with LLM rationales |
+| `site/data.json` | Merged data for the treemap visualization |
+
+## License
+
+MIT
